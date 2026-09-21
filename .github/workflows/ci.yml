@@ -21,8 +21,10 @@ permissions:
 env:
   # The release the interface check's assertions were written against. The
   # check itself is behavioural and compares no version, so this pin makes the
-  # run reproducible rather than making the tool version-specific.
-  REQFLOW_REF: v1.6.0
+  # run reproducible rather than making the tool version-specific. The tag
+  # leaves AC_INIT at 1.6.0, so the binary reports itself as Reqflow 1.6.0,
+  # which is the string the check names.
+  REQFLOW_REF: v1.6.1
   BATS_REF: v1.13.0
 
 jobs:
@@ -63,14 +65,15 @@ jobs:
           path: reqflow/build/reqflow
           key: reqflow-${{ matrix.os }}-${{ env.REQFLOW_REF }}
 
-      - name: Install reqflow's build dependencies
-        if: steps.reqflow-cache.outputs.cache-hit != 'true'
+      - name: Install reqflow's libraries
         run: |
           set -euo pipefail
           # reqflow is GNU Autotools, not CMake, and every library below is a
           # hard requirement: configure.ac calls PKG_CHECK_MODULES with no
           # action-if-not-found, so a missing one aborts configure rather than
-          # dropping a format.
+          # dropping a format. reqflow links them dynamically, so the cached
+          # binary needs them present as much as a fresh build does and this
+          # step runs on a cache hit too.
           if [ "$RUNNER_OS" = Linux ]; then
             sudo apt-get update -qq
             sudo apt-get install -y -qq \
@@ -86,12 +89,17 @@ jobs:
           set -euo pipefail
           git clone --depth 1 --branch "$REQFLOW_REF" https://github.com/goeb/reqflow.git reqflow
           cd reqflow
-          ./bootstrap.sh
+          # A release tag carries the autoreconf output, configure among it, so
+          # there is nothing to bootstrap here. bootstrap.sh exists on master,
+          # where the generated files are not in version control.
           mkdir -p build && cd build
-          # libxml2 is keg-only on Homebrew, so its .pc file is not on the
-          # default search path.
           if [ "$RUNNER_OS" = macOS ]; then
+            # libxml2 is keg-only on Homebrew, so its .pc file is not on the
+            # default search path. poppler's .pc names include/poppler/cpp
+            # while the sources include <poppler/cpp/poppler-document.h>, so
+            # the Homebrew include root has to be on the path as well.
             export PKG_CONFIG_PATH="$(brew --prefix libxml2)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+            export CPPFLAGS="-I$(brew --prefix)/include${CPPFLAGS:+ $CPPFLAGS}"
           fi
           ../configure
           make -j2

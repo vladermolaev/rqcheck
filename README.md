@@ -100,6 +100,16 @@ Autotools rather than CMake:
 It needs `libzip`, `libxml-2.0`, `poppler-cpp` and `libpcre`, all four of them
 hard requirements. Then put the binary on `PATH` or set `REQFLOW`.
 
+`bootstrap.sh` is a master-only file, because a release tag carries the
+autoreconf output and `configure` with it. On macOS with Homebrew, `libxml2` is
+keg-only, so its `.pc` file is off the default search path. poppler's `.pc`
+file names `include/poppler/cpp` while the sources include
+`<poppler/cpp/poppler-document.h>`, so the Homebrew include root has to be
+passed as well. Both go on the configure line.
+
+    PKG_CONFIG_PATH="$(brew --prefix libxml2)/lib/pkgconfig" \
+    CPPFLAGS="-I$(brew --prefix)/include" ../configure
+
 bats-core runs the suite. `shellcheck -S warning` is clean on every `.sh` here.
 
 ## The reqflow interface, and why the check is not optional
