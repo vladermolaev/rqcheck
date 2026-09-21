@@ -105,10 +105,14 @@ autoreconf output and `configure` with it. On macOS with Homebrew, `libxml2` is
 keg-only, so its `.pc` file is off the default search path. poppler's `.pc`
 file names `include/poppler/cpp` while the sources include
 `<poppler/cpp/poppler-document.h>`, so the Homebrew include root has to be
-passed as well. Both go on the configure line.
+passed as well. `src/req.cpp` initialises an array from a brace list with no
+`=`, which is C++11, and Apple clang still defaults `g++` to gnu++98, so the
+standard has to be named too. `-g -O2` is configure's own default, which
+naming `CXXFLAGS` would otherwise drop.
 
     PKG_CONFIG_PATH="$(brew --prefix libxml2)/lib/pkgconfig" \
-    CPPFLAGS="-I$(brew --prefix)/include" ../configure
+    CPPFLAGS="-I$(brew --prefix)/include" \
+    ../configure CXXFLAGS="-std=gnu++11 -g -O2"
 
 bats-core runs the suite. `shellcheck -S warning` is clean on every `.sh` here.
 

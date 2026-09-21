@@ -92,6 +92,17 @@ jobs:
           # A release tag carries the autoreconf output, configure among it, so
           # there is nothing to bootstrap here. bootstrap.sh exists on master,
           # where the generated files are not in version control.
+          #
+          # git stamps a checkout in the order it writes the files, so
+          # configure.ac can land microseconds after aclocal.m4, and automake's
+          # rebuild rules then reach for the aclocal-1.15 that generated them,
+          # which no runner carries. Stamping the generated files in dependency
+          # order settles that before make looks. A make that compares whole
+          # seconds, 3.81 as shipped on macOS, never sees the difference, so
+          # this is the GNU leg's failure alone.
+          touch aclocal.m4
+          touch configure src/config.h.in
+          touch Makefile.in test/Makefile.in
           mkdir -p build && cd build
           if [ "$RUNNER_OS" = macOS ]; then
             # libxml2 is keg-only on Homebrew, so its .pc file is not on the
@@ -101,7 +112,11 @@ jobs:
             export PKG_CONFIG_PATH="$(brew --prefix libxml2)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
             export CPPFLAGS="-I$(brew --prefix)/include${CPPFLAGS:+ $CPPFLAGS}"
           fi
-          ../configure
+          # src/req.cpp initialises an array from a brace list with no '=',
+          # which is C++11, and Apple clang still defaults g++ to gnu++98. The
+          # two optimisation flags are configure's own default, which naming
+          # CXXFLAGS would otherwise drop.
+          ../configure CXXFLAGS="-std=gnu++11 -g -O2"
           make -j2
 
       - name: Install bats-core
@@ -164,7 +179,7 @@ jobs:
             libzip-dev libxml2-dev libpoppler-cpp-dev libpcre3-dev
           git clone --depth 1 https://github.com/goeb/reqflow.git reqflow
           cd reqflow && ./bootstrap.sh && mkdir -p build && cd build
-          ../configure && make -j2
+          ../configure CXXFLAGS="-std=gnu++11 -g -O2" && make -j2
           cd "$GITHUB_WORKSPACE"
           REQFLOW="$PWD/reqflow/build/reqflow" \
           RQ_PROFILE="$PWD/skills/rqcheck/profiles/bmad-stock.sh" \
