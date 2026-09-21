@@ -1,0 +1,6 @@
+{
+  "name": "rqcheck",
+  "description": "Answer requirement-traceability questions over a planning-artifact tree by extracting its identifier graph with reqflow, instead of reading the registers or improvising search patterns over them.",
+  "version": "0.1.0",
+  "author": { "name": "Vladislav Ermolaev" }
+}

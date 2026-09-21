@@ -1,0 +1,14 @@
+{
+  "name": "rqcheck",
+  "owner": {
+    "name": "Vladislav Ermolaev"
+  },
+  "plugins": [
+    {
+      "name": "rqcheck",
+      "source": "./",
+      "description": "Requirement traceability over a planning-artifact tree, with every corpus convention in a profile file."
+    }
+  ],
+  "description": "One plugin: rqcheck, requirement traceability over a planning-artifact tree."
+}
